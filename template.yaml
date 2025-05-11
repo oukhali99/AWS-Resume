@@ -11,13 +11,13 @@ Resources:
       Role: !GetAtt LambdaSendMessageRole.Arn
       Code:
         ZipFile: |
-          import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+          const { SESClient, SendEmailCommand } = require("@aws-sdk/client-ses");
 
           const sesClient = new SESClient({ region: "us-east-1" }); // Change to your region
 
           console.log('Loading function');
 
-          export const handler = async (event, context) => {
+          module.exports.handler = async (event, context) => {
               console.log('Received event body:', JSON.stringify(event.body, null, 2));
               
               try {
@@ -52,8 +52,9 @@ Resources:
                   return {
                       statusCode: 200,
                       headers: {
+                          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                           'Access-Control-Allow-Origin': '*',
-                          'Access-Control-Allow-Headers': 'Content-Type'
+                          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
                       },
                       body: JSON.stringify({
                           message: 'Email sent successfully'
@@ -66,8 +67,9 @@ Resources:
                   return {
                       statusCode: 500,
                       headers: {
+                          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                           'Access-Control-Allow-Origin': '*',
-                          'Access-Control-Allow-Headers': 'Content-Type'
+                          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
                       },
                       body: JSON.stringify({
                           message: `Failed to send email due to ${error.message}`
@@ -115,6 +117,33 @@ Resources:
       PathPart: send-message
       RestApiId: !Ref APIGateway
 
+  APIGatewayMethodOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APISendMessageResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+          ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: true
+              method.response.header.Access-Control-Allow-Methods: true
+              method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{ "statusCode": 200 }'
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+
   APIGatewayMethodPost:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -122,15 +151,28 @@ Resources:
       ResourceId: !Ref APISendMessageResource
       HttpMethod: POST
       AuthorizationType: NONE
+      RequestModels:
+        "application/json": !Ref APIEmailAndMessageModel
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaSendMessage.Arn}/invocations
 
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Description: Permission for API Gateway to invoke Lambda.
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaSendMessage.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*
+
+
   APIGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn: 
       - APIGatewayMethodPost
+      - APIGatewayMethodOptions
     Properties:
       RestApiId: !Ref APIGateway
       Description: !Ref AWS::StackName
@@ -141,3 +183,31 @@ Resources:
       RestApiId: !Ref APIGateway
       StageName: prod
       DeploymentId: !Ref APIGatewayDeployment
+
+  APIEmailAndMessageModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref APIGateway
+      Name: EmailAndMessageModel
+      ContentType: application/json
+      Schema:
+        {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "title": "ReturnEmailAndMessage",
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "format": "email",
+              "minLength": 0,
+              "maxLength": 254
+            },
+            "message": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 1000
+            }
+          },
+          "required": ["email", "message"],
+          "additionalProperties": false
+        }

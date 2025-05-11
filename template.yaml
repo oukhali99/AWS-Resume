@@ -102,6 +102,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
+
   APIGateway:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -117,7 +118,53 @@ Resources:
       PathPart: send-message
       RestApiId: !Ref APIGateway
 
-  APIGatewayMethodOptions:
+  APIAddVisitorResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: add-visitor
+      RestApiId: !Ref APIGateway
+
+  APIAddVisitorMethodOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIAddVisitorResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{ "statusCode": 200 }'
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+  
+  APIAddVisitorMethodPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIAddVisitorResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaAddVisitor.Arn}/invocations
+
+  APIGatewaySendMessageMethodOptions:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref APIGateway
@@ -144,6 +191,52 @@ Resources:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
 
+  APIGetVisitorCountResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: get-visitor-count
+      RestApiId: !Ref APIGateway
+
+  APIGetVisitorCountMethodOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIGetVisitorCountResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{ "statusCode": 200 }'
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+
+  APIGetVisitorCountMethodPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResourceId: !Ref APIGetVisitorCountResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaGetVisitorCount.Arn}/invocations
+
   BodyOnlyRequestValidator:
     Type: AWS::ApiGateway::RequestValidator
     Properties:
@@ -166,7 +259,7 @@ Resources:
         Type: AWS_PROXY
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaSendMessage.Arn}/invocations
 
-  LambdaPermission:
+  LambdaSendMessagePermission:
     Type: AWS::Lambda::Permission
     Description: Permission for API Gateway to invoke Lambda.
     Properties:
@@ -179,7 +272,11 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn: 
       - APIGatewayMethodPost
-      - APIGatewayMethodOptions
+      - APIGatewaySendMessageMethodOptions
+      - APIAddVisitorMethodPost
+      - APIAddVisitorMethodOptions
+      - APIGetVisitorCountMethodPost
+      - APIGetVisitorCountMethodOptions
     Properties:
       RestApiId: !Ref APIGateway
       Description: !Ref AWS::StackName
@@ -242,3 +339,190 @@ Resources:
         gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
       ResponseTemplates:
         application/json: '{"message":$context.error.messageString}'
+
+
+  DynamoDBVisitorTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-visitor
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: IpAddress
+          AttributeType: S
+        - AttributeName: Timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: IpAddress
+          KeyType: HASH
+        - AttributeName: Timestamp
+          KeyType: RANGE
+          
+  LambdaAddVisitor:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-lambda-add-visitor
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Role: !GetAtt LambdaAddVisitorRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBVisitorTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+
+          const ddbClient = new DynamoDBClient({ region: "us-east-1" }); // Change to your region
+
+          module.exports.handler = async (event, context) => {
+              console.log('Received event body:', JSON.stringify(event.body, null, 2));
+
+              try {
+                  // Parse the request body
+
+                  const params = {
+                      TableName: process.env.TABLE_NAME,
+                      Item: {
+                          IpAddress: { S: event.requestContext.identity.sourceIp },
+                          Timestamp: { N: Math.floor(Date.now() / 1000).toString() }
+                      }
+                  };
+
+                  const command = new PutItemCommand(params);
+                  await ddbClient.send(command);
+
+                  return {
+                      statusCode: 200,
+                      body: JSON.stringify({ message: 'Visitor added successfully' }),
+                      headers: {
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
+                      }
+                  };
+              } catch (error) {
+                  console.error('Error:', error);
+                  return {
+                      statusCode: 500,
+                      body: JSON.stringify({ message: `Failed to add visitor due to ${error.message}` }),
+                      headers: {
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
+                      }
+                  };
+              }
+          };
+
+  LambdaAddVisitorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaAddVisitor.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*
+  
+  LambdaAddVisitorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-lambda-add-visitor-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowDynamoDBPutItem
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: '*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  LambdaGetVisitorCount:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-lambda-get-visitor-count
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Role: !GetAtt LambdaGetVisitorCountRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBVisitorTable
+      Code:
+        ZipFile: |
+          const { DynamoDBClient, ScanCommand } = require("@aws-sdk/client-dynamodb");
+
+          const ddbClient = new DynamoDBClient({ region: "us-east-1" }); // Change to your region
+
+          module.exports.handler = async (event, context) => {
+              console.log('Received event:', JSON.stringify(event, null, 2));
+
+              try {
+                  const params = {
+                    TableName: process.env.TABLE_NAME
+                  };
+
+                  const command = new ScanCommand(params);
+                  const result = await ddbClient.send(command);
+
+                  const visitorCount = result.Items ? result.Items.length : 0;
+
+                  return {
+                      statusCode: 200,
+                      body: JSON.stringify({ visitorCount }),
+                      headers: {
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
+                      }
+                  };
+              } catch (error) {
+                  console.error('Error:', error);
+                  return {
+                      statusCode: 500,
+                      body: JSON.stringify({ message: `Failed to get visitor count due to ${error.message}` }),
+                      headers: {
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE'
+                      }
+                  };
+              }
+          };
+
+  LambdaGetVisitorCountPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaGetVisitorCount.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGateway}/*
+
+  LambdaGetVisitorCountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-lambda-get-visitor-count-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowDynamoDBGetItem
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Scan
+                Resource: '*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole

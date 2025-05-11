@@ -1,127 +1,115 @@
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import ContactInfo from './ContactInfo';
+import VisitorCount from './VisitorCount';
 
 function App() {
   return (
-    <Container className="py-4">
-      <Row className="mb-4">
-        <Col className="text-center">
-          <h1 className="display-4 mb-3">Oussama Khalifeh</h1>
-          <ContactInfo />
-        </Col>
-      </Row>
+    <Container className="py-5">
+      {/* Header Section */}
+      <Card className="mb-5 shadow-sm">
+        <Card.Body className="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 className="display-4 mb-0">Oussama Khalifeh</h1>
+            <ContactInfo />
+          </div>
+          <VisitorCount />
+        </Card.Body>
+      </Card>
 
-      <Row className="mb-4">
-        <Col>
-          <Card className="mb-4">
-            <Card.Body>
-              <h2 className="h3 mb-3 border-bottom pb-2">Education</h2>
-              <h3 className="h4">Bachelor of Science in Mathematics and Computer Science</h3>
-              <p className="text-muted">McGill University | 2018 - 2021</p>
-              <p>Graduated with a 3.9 GPA</p>
-              <p>Studied Algorithms and Data Structures, Software Design, Database Systems, Modern Computer Games</p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* Education Section */}
+      <SectionCard title="Education">
+        <h3>Bachelor of Science in Mathematics and Computer Science</h3>
+        <p className="text-muted">McGill University | 2018 - 2021</p>
+        <p>Graduated with a 3.9 GPA</p>
+        <p>Studied Algorithms, Software Design, Databases, and Modern Game Development</p>
+      </SectionCard>
 
-      <Row className="mb-4">
-        <Col>
-          <Card className="mb-4">
-            <Card.Body>
-              <h2 className="h3 mb-3 border-bottom pb-2">Work Experience</h2>
-              
-              <div className="mb-4">
-                <h3 className="h4">Full Stack Software Developer</h3>
-                <p className="text-muted">Asset Science | July 15, 2021 - Present</p>
-                <ul>
-                  <li>Developed an ElectronJS + ReactJS desktop application for interfacing with mobile devices</li>
-                  <li>Used C++ and libimobiledevice to communicate directly with mobile devices and extract information</li>
-                  <li>Developed a mobile application for iOS and Android</li>
-                  <li>Built a macOS desktop application using Python and Tkinter for automatic iOS device flashing</li>
-                  <li>Communicated with customers to plan and implement their software business needs</li>
-                </ul>
-              </div>
+      {/* Work Experience */}
+      <SectionCard title="Work Experience">
+        {/* Job entries */}
+        <Job
+          title="Full Stack Software Developer"
+          company="Asset Science"
+          duration="July 2021 – Present"
+          bullets={[
+            "Developed an ElectronJS + ReactJS desktop app",
+            "Used C++ and libimobiledevice to communicate with mobile devices",
+            "Built iOS/Android mobile apps and macOS desktop tools",
+            "Worked closely with clients to meet business needs"
+          ]}
+        />
+        <Job
+          title="Full Stack Web API and App Developer"
+          company="Solarex"
+          duration="May 2021 – July 2021"
+          bullets={[
+            "Built reservation APIs with Laravel and ASP.NET",
+            "Implemented Identity Server authentication",
+            "Developed front-ends with Razor"
+          ]}
+        />
+        <Job
+          title="Research Intern"
+          company="CRSNG at UQAM"
+          duration="May 2019 – September 2019"
+          bullets={[
+            "Optimized packet scheduling algorithms",
+            "Implemented Python versions of theoretical models",
+            "Co-authored a research paper"
+          ]}
+        />
+      </SectionCard>
 
-              <div className="mb-4">
-                <h3 className="h4">Full Stack Web API and App Developer</h3>
-                <p className="text-muted">Solarex | May 5, 2021 - July 10, 2021</p>
-                <ul>
-                  <li>Developed a reservation API using Laravel and ASP.NET</li>
-                  <li>Implemented web authentication using Identity Server</li>
-                  <li>Designed and developed a front-end using Razor</li>
-                </ul>
-              </div>
+      {/* Skills */}
+      <SectionCard title="Skills">
+        <Row>
+          <Col md={6}>
+            <h5>Programming & Tech</h5>
+            <SkillList skills={["Java", "Python", "C#", "C++", ".NET", "JavaScript", "React", "Android", "Rust", "SQL", "Mongo", "Docker", "AWS", "Spring Boot"]} />
+          </Col>
+          <Col md={6}>
+            <h5>Game Development</h5>
+            <SkillList skills={["Unity", "Godot", "DirectX", "OpenGL"]} />
+          </Col>
+        </Row>
+      </SectionCard>
 
-              <div className="mb-4">
-                <h3 className="h4">Research Intern</h3>
-                <p className="text-muted">CRSNG at UQAM | May 1, 2019 - September 17, 2019</p>
-                <ul>
-                  <li>Optimized packet scheduling algorithms</li>
-                  <li>Implemented pseudo-code in Python</li>
-                  <li>Contributed to a research paper in collaboration with other researchers</li>
-                </ul>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="mb-4">
-        <Col>
-          <Card className="mb-4">
-            <Card.Body>
-              <h2 className="h3 mb-3 border-bottom pb-2">Skills</h2>
-              <Row>
-                <Col md={6} className="mb-3">
-                  <h3 className="h4">Programming Languages & Technologies</h3>
-                  <ul className="list-unstyled">
-                    <li>Java</li>
-                    <li>Python</li>
-                    <li>C#</li>
-                    <li>C++</li>
-                    <li>.NET</li>
-                    <li>JavaScript</li>
-                    <li>React</li>
-                    <li>Android</li>
-                    <li>libimobiledevice</li>
-                    <li>Rust</li>
-                    <li>SQL</li>
-                    <li>Mongo</li>
-                    <li>Docker</li>
-                    <li>AWS</li>
-                    <li>WinForms</li>
-                    <li>Spring Boot</li>
-                  </ul>
-                </Col>
-                <Col md={6}>
-                  <h3 className="h4">Game Development & Graphics</h3>
-                  <ul className="list-unstyled">
-                    <li>Unity</li>
-                    <li>Godot</li>
-                    <li>DirectX</li>
-                    <li>OpenGL</li>
-                  </ul>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="mb-4">
-        <Col>
-          <Card>
-            <Card.Body>
-              <h2 className="h3 mb-3 border-bottom pb-2">Interests and Hobbies</h2>
-              <p>Hobby/Casual Game Development, Automobile Repair, Fishing</p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* Interests */}
+      <SectionCard title="Interests & Hobbies">
+        <p>Game development, automobile repair, fishing</p>
+      </SectionCard>
     </Container>
   );
 }
+
+const SectionCard = ({ title, children }: { title: string, children: React.ReactNode }) => (
+  <Card className="mb-5 shadow-sm">
+    <Card.Body>
+      <h2 className="h4 border-bottom pb-2 mb-4">{title}</h2>
+      {children}
+    </Card.Body>
+  </Card>
+);
+
+const Job = ({ title, company, duration, bullets }: { title: string, company: string, duration: string, bullets: string[] }) => (
+  <div className="mb-4">
+    <h4>{title}</h4>
+    <p className="text-muted mb-1">{company} | {duration}</p>
+    <ul className="mb-0">
+      {bullets.map((b, i) => <li key={i}>{b}</li>)}
+    </ul>
+  </div>
+);
+
+const SkillList = ({ skills }: { skills: string[] }) => (
+  <ul className="list-inline">
+    {skills.map((skill, i) => (
+      <li key={i} className="list-inline-item mb-2">
+        <Badge bg="secondary" className="p-2">{skill}</Badge>
+      </li>
+    ))}
+  </ul>
+);
 
 export default App;

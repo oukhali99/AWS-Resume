@@ -144,6 +144,13 @@ Resources:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Origin: "'*'"
 
+  BodyOnlyRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      Name: !Sub ${AWS::StackName}-request-validator
+      RestApiId: !Ref APIGateway
+      ValidateRequestBody: true
+
   APIGatewayMethodPost:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -151,6 +158,7 @@ Resources:
       ResourceId: !Ref APISendMessageResource
       HttpMethod: POST
       AuthorizationType: NONE
+      RequestValidatorId: !Ref BodyOnlyRequestValidator
       RequestModels:
         "application/json": !Ref APIEmailAndMessageModel
       Integration:
@@ -211,3 +219,27 @@ Resources:
           "required": ["email", "message"],
           "additionalProperties": false
         }
+
+  GatewayResponseDefault4XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+      ResponseTemplates:
+        application/json: '{"message":$context.error.messageString}'
+
+  GatewayResponseDefault5XX:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref APIGateway
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+      ResponseTemplates:
+        application/json: '{"message":$context.error.messageString}'

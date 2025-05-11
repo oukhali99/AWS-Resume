@@ -40,7 +40,7 @@ const ContactInfo = () => {
 			setIsLoading(true);
 			setError("");
 			
-			const response = await fetch('https://yh8tpv7iij.execute-api.us-east-1.amazonaws.com/dev/send-message', {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/send-message`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

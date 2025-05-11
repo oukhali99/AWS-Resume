@@ -28,6 +28,10 @@ const StyledModal = styled(Modal)`
 	}
 `;
 
+const StyledButton = styled(Button)`
+	padding: 0.25rem;
+`;
+
 const ContactInfo = () => {
 	const [showEmailModal, setShowEmailModal] = useState(false);
 	const [email, setEmail] = useState("");
@@ -77,26 +81,25 @@ const ContactInfo = () => {
 		<div>
 			<StyledModal show={showEmailModal} onHide={closeModalClicked}>
 				<Modal.Header>
-					<Modal.Title>Send E-Mail</Modal.Title>
+					<Modal.Title>Send Me a Message!</Modal.Title>
 				</Modal.Header>
 				<Modal.Body>
 					<Form>
 						<Form.Group>
-							<Form.Label>E-Mail</Form.Label>
 							<Form.Control 
 								type="email" 
-								placeholder="Enter your e-mail" 
+								placeholder="Please Enter your Email" 
 								value={email} 
 								onChange={(e) => setEmail(e.target.value)}
 								disabled={isLoading}
 							/>
 						</Form.Group>
 						<Form.Group>
-							<Form.Label>Message</Form.Label>
+							<Form.Label></Form.Label>
 							<Form.Control 
 								as="textarea" 
 								rows={10} 
-								placeholder="Enter your message" 
+								placeholder="Enter Your Message" 
 								value={message} 
 								onChange={(e) => setMessage(e.target.value)}
 								disabled={isLoading}
@@ -117,12 +120,13 @@ const ContactInfo = () => {
 				</Modal.Footer>
 			</StyledModal>
 			<ContactInfoDiv>
-				<ContactItem>
-					<span>📧</span>
-					<Button variant="primary" onClick={() => setShowEmailModal(true)}>Send E-Mail</Button>
-				</ContactItem>
 				<ContactItem>📱 *Removed For Privacy*</ContactItem>
 				<ContactItem>📍 Montreal, Canada (Easy Relocation)</ContactItem>
+				<ContactItem>
+					<span>📧</span>
+					<StyledButton variant="primary" onClick={() => setShowEmailModal(true)}>Send E-Mail</StyledButton>
+				</ContactItem>
+				<ContactItem>👨‍💻 <StyledButton href="https://github.com/oukhali99" target="_blank" rel="noopener noreferrer">GitHub</StyledButton></ContactItem>
 			</ContactInfoDiv>
 		</div>
 	);

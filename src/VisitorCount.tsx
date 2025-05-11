@@ -23,9 +23,13 @@ const VisitorCount = ({ style }: Props) => {
         });
     };
 
+    const init = async () => {
+        await incrementVisitorCount();
+        await fetchVisitorCount();
+    };
+
     useEffect(() => {
-        incrementVisitorCount();
-        fetchVisitorCount();
+        init();
     }, []);
 
     return (

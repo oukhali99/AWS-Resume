@@ -18,7 +18,7 @@ function App() {
               height="30"
               className="d-inline-block align-top me-2"
             />
-            Built in AWS using CloudFormation
+            Deployed on AWS using CloudFormation
           </Navbar.Brand>
         </Container>
       </Navbar>

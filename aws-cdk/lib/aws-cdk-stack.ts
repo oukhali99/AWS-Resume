@@ -246,7 +246,29 @@ export class AWSResumeStack extends cdk.Stack {
       bucketName: `${this.stackName.toLowerCase()}-pipeline-artifacts`
     });
 
-    // CodeBuild Project
+    const buildSpec = codebuild.BuildSpec.fromObject({
+      version: '0.2',
+      phases: {
+        install: {
+          'runtime-versions': {
+            nodejs: '22'
+          },
+          commands: [
+            'npm install -g yarn',
+            'yarn install'
+          ]
+        },
+        build: {
+          commands: [
+            'yarn build'
+          ]
+        }
+      },
+      artifacts: {
+        'base-directory': 'dist',
+        files: ['**/*']
+      }
+    });
     const codeBuildProject = new codebuild.PipelineProject(this, 'CodeBuildProject', {
       projectName: `${this.stackName}-codebuild-project`,
       environment: {
@@ -258,29 +280,7 @@ export class AWSResumeStack extends cdk.Stack {
           }
         }
       },
-      buildSpec: codebuild.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          install: {
-            'runtime-versions': {
-              nodejs: '22'
-            },
-            commands: [
-              'npm install -g yarn',
-              'yarn install'
-            ]
-          },
-          build: {
-            commands: [
-              'yarn build'
-            ]
-          }
-        },
-        artifacts: {
-          'base-directory': 'dist',
-          files: ['**/*']
-        }
-      })
+      buildSpec: buildSpec
     });
 
     // Pipeline

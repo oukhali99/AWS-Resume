@@ -29,7 +29,8 @@ export class AWSResumeStack extends cdk.Stack {
       tableName: `${this.stackName}-visitor`,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: 'IpAddress', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'Timestamp', type: dynamodb.AttributeType.NUMBER }
+      sortKey: { name: 'Timestamp', type: dynamodb.AttributeType.NUMBER },
+      removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
     // Lambda Functions
@@ -117,7 +118,33 @@ export class AWSResumeStack extends cdk.Stack {
           'Authorization',
           'X-Api-Key',
           'X-Amz-Security-Token'
-        ]
+        ],
+        allowCredentials: true
+      }
+    });
+
+    // Add Gateway Responses for CORS
+    api.addGatewayResponse('GatewayResponseDefault4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
+      },
+      templates: {
+        'application/json': '{"message":$context.error.messageString}'
+      }
+    });
+
+    api.addGatewayResponse('GatewayResponseDefault5XX', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
+      },
+      templates: {
+        'application/json': '{"message":$context.error.messageString}'
       }
     });
 
@@ -243,7 +270,8 @@ export class AWSResumeStack extends cdk.Stack {
 
     // Pipeline Artifacts Bucket
     const pipelineArtifactsBucket = new s3.Bucket(this, 'S3BucketPipelineArtifacts', {
-      bucketName: `${this.stackName.toLowerCase()}-pipeline-artifacts`
+      bucketName: `${this.stackName.toLowerCase()}-pipeline-artifacts`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
     const buildSpec = codebuild.BuildSpec.fromObject({
@@ -276,7 +304,7 @@ export class AWSResumeStack extends cdk.Stack {
         computeType: codebuild.ComputeType.SMALL,
         environmentVariables: {
           VITE_API_URL: {
-            value: `https://api.resume.oussamakhalifeh.com/prod`
+            value: `https://api.resume.oussamakhalifeh.com`
           }
         }
       },

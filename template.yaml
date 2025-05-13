@@ -668,6 +668,9 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
         ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: VITE_API_URL
+            Value: !Sub https://api.resume.oussamakhalifeh.com/prod
       Source:
         Type: GITHUB
         Location: https://github.com/oukhali99/AWS-Resume

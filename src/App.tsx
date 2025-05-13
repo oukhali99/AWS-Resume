@@ -18,7 +18,7 @@ function App() {
               height="30"
               className="d-inline-block align-top me-2"
             />
-            Deployed on AWS using CloudFormation with Full CodePipeline CI/CD Pipeline
+            Deployed on AWS using CDK with Full CodePipeline CI/CD Pipeline
           </Navbar.Brand>
         </Container>
       </Navbar>

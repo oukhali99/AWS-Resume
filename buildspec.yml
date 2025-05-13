@@ -1,0 +1,13 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Starting yarn build"
+      - yarn
+      - yarn build
+      - echo "Completed yarn build successfully!"
+
+artifacts:
+  files:
+    - 'dist/**/*'

@@ -81,7 +81,7 @@ const ContactInfo = () => {
 		<div>
 			<StyledModal show={showEmailModal} onHide={closeModalClicked}>
 				<Modal.Header>
-					<Modal.Title>Send Me a Message!</Modal.Title>
+					<Modal.Title>Send Me a Message! (Sent through AWS SES Proxy Email)</Modal.Title>
 				</Modal.Header>
 				<Modal.Body>
 					<Form>

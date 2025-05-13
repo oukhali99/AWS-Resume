@@ -6,9 +6,11 @@ phases:
       - echo "Starting yarn build"
       - yarn
       - yarn build
+      - echo "Finished build"
+      - ls -la dist/
       - echo "Completed yarn build successfully!"
 
 artifacts:
   files:
-    - 'dist/*'
+    - '**/*'
   base-directory: dist

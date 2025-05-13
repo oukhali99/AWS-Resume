@@ -1,6 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation template for Resume'
 
+Parameters:
+  GitHubConnectionArn:
+    Type: String
+    Description: GitHub Connection ARN
+
+  S3BucketWebsite:
+    Type: String
+    Description: S3 Bucket Website Name
+
 Resources:
   LambdaSendMessage:
     Type: AWS::Lambda::Function
@@ -526,3 +535,240 @@ Resources:
                 Resource: '*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  S3BucketPipelineArtifacts:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub pipeline-artifacts-aws-resume
+
+  IAMRolePipeline:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub role-pipeline-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+  IAMPipelinePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: PipelinePolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Resource:
+              - !GetAtt S3BucketPipelineArtifacts.Arn
+              - !Sub ${S3BucketPipelineArtifacts.Arn}/*
+              - !Sub arn:aws:s3:::${S3BucketWebsite}
+              - !Sub arn:aws:s3:::${S3BucketWebsite}/*
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource:
+              - !GetAtt IAMRoleCodeBuildAction.Arn
+              - !GetAtt IAMRoleCodeConnectionsAction.Arn
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: "*"
+      Roles:
+        - !Ref IAMRolePipeline
+
+  IAMRoleCodeBuildAction:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt IAMRolePipeline.Arn
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+      Policies:
+        - PolicyName: CodeBuildActionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                Resource: !GetAtt CodeBuildProject.Arn
+
+  IAMRoleCodeConnectionsAction:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt IAMRolePipeline.Arn
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+      Policies:
+        - PolicyName: CodeConnectionsActionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+              - Effect: Allow
+                Action:
+                  - s3:Abort*
+                  - s3:DeleteObject*
+                  - s3:GetBucket*
+                  - s3:GetObject*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:PutObjectLegalHold
+                  - s3:PutObjectRetention
+                  - s3:PutObjectTagging
+                  - s3:PutObjectVersionTagging
+                Resource:
+                  - !GetAtt S3BucketPipelineArtifacts.Arn
+                  - !Sub ${S3BucketPipelineArtifacts.Arn}/*
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub codebuild-project-${AWS::StackName}
+      Description: "Builds the resume website"
+      Artifacts:
+        Type: S3
+        Location: !Ref S3BucketPipelineArtifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        ComputeType: BUILD_GENERAL1_SMALL
+      Source:
+        Type: GITHUB
+        Location: https://github.com/oukhali99/AWS-Resume
+        GitCloneDepth: 1
+        BuildSpec: buildspec.yml
+      ServiceRole: !GetAtt IAMRoleCodeBuildService.Arn
+
+  IAMRoleCodeBuildService:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub role-codebuild-service-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: "codebuild.amazonaws.com"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeBuildDeveloperAccess
+      Policies:
+        - PolicyName: "CodeBuildPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:Abort*
+                  - s3:DeleteObject*
+                  - s3:GetBucket*
+                  - s3:GetObject*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:PutObjectLegalHold
+                  - s3:PutObjectRetention
+                  - s3:PutObjectTagging
+                  - s3:PutObjectVersionTagging
+                Resource:
+                  - !GetAtt S3BucketPipelineArtifacts.Arn
+                  - !Sub ${S3BucketPipelineArtifacts.Arn}/*
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt IAMRolePipeline.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3BucketPipelineArtifacts
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: oukhali99/AWS-Resume
+                BranchName: main
+                DetectChanges: true
+              RunOrder: 1
+              RoleArn: !GetAtt IAMRoleCodeConnectionsAction.Arn
+
+        - Name: Build
+          Actions:
+            - Name: BuildWithYarn
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+              RoleArn: !GetAtt IAMRoleCodeBuildAction.Arn
+
+        - Name: Deploy
+          Actions:
+            - Name: DeployToS3
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: S3
+                Version: 1
+              InputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                BucketName: !Ref S3BucketWebsite
+                Extract: true
+              RunOrder: 1

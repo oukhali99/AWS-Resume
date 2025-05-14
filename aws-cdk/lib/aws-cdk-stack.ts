@@ -8,21 +8,21 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 export class AWSResumeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // Parameters
-    const githubConnectionArn = new cdk.CfnParameter(this, 'GitHubConnectionArn', {
-      type: 'String',
-      description: 'GitHub Connection ARN'
-    });
+    const githubConnectionArn = process.env.GITHUB_CONNECTION_ARN;
+    if (!githubConnectionArn) throw new Error('GITHUB_CONNECTION_ARN is not set');
 
-    const s3BucketWebsite = new cdk.CfnParameter(this, 'S3BucketWebsite', {
-      type: 'String',
-      description: 'S3 Bucket Website Name'
-    });
+    const s3BucketWebsite = process.env.S3_BUCKET_WEBSITE;
+    if (!s3BucketWebsite) throw new Error('S3_BUCKET_WEBSITE is not set');
 
     // DynamoDB Table
     const visitorTable = new dynamodb.Table(this, 'DynamoDBVisitorTable', {
@@ -321,7 +321,7 @@ export class AWSResumeStack extends cdk.Stack {
           actions: [
             new codepipeline_actions.CodeStarConnectionsSourceAction({
               actionName: 'GitHubSource',
-              connectionArn: githubConnectionArn.valueAsString,
+              connectionArn: githubConnectionArn,
               owner: 'oukhali99',
               repo: 'AWS-Resume',
               branch: 'main',
@@ -345,7 +345,7 @@ export class AWSResumeStack extends cdk.Stack {
           actions: [
             new codepipeline_actions.S3DeployAction({
               actionName: 'DeployToS3',
-              bucket: s3.Bucket.fromBucketName(this, 'WebsiteBucket', s3BucketWebsite.valueAsString),
+              bucket: s3.Bucket.fromBucketName(this, 'WebsiteBucket', s3BucketWebsite),
               input: new codepipeline.Artifact('BuildOutput'),
               extract: true
             })

@@ -8,25 +8,34 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
-import * as dotenv from 'dotenv';
 
-// Load environment variables from .env file
-dotenv.config();
+interface EnvironmentConfig {
+  s3BucketWebsite: string;
+  backendUrl: string;
+}
 
 export class AWSResumeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Parameters
-    const githubConnectionArn = process.env.GITHUB_CONNECTION_ARN;
-    if (!githubConnectionArn) throw new Error('GITHUB_CONNECTION_ARN is not set');
+    const environment = this.node.tryGetContext('environment');
+    if (!environment) throw new Error('Environment not found in context');
 
-    const s3BucketWebsite = process.env.S3_BUCKET_WEBSITE;
-    if (!s3BucketWebsite) throw new Error('S3_BUCKET_WEBSITE is not set');
+    const envConfig = this.node.tryGetContext(environment) as EnvironmentConfig;
+    if (!envConfig) throw new Error(`Environment configuration for '${environment}' not found in context`);
+  
+    const githubConnectionArn = this.node.tryGetContext('githubConnectionArn') as string | undefined;
+    if (!githubConnectionArn) throw new Error('githubConnectionArn not found in context');
+
+    const s3BucketWebsite = envConfig.s3BucketWebsite;
+    if (!s3BucketWebsite) throw new Error(`s3BucketWebsite not found in environment configuration for '${environment}'`);
+
+    const backendUrl = envConfig.backendUrl;
+    if (!backendUrl) throw new Error(`backendUrl not found in environment configuration for '${environment}'`);
 
     // DynamoDB Table
     const visitorTable = new dynamodb.Table(this, 'DynamoDBVisitorTable', {
-      tableName: `${this.stackName}-visitor`,
+      tableName: `${this.stackName}-${environment}-visitor`,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       partitionKey: { name: 'IpAddress', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'Timestamp', type: dynamodb.AttributeType.NUMBER },
@@ -35,7 +44,7 @@ export class AWSResumeStack extends cdk.Stack {
 
     // Lambda Functions
     const sendMessageLambda = new lambda.Function(this, 'LambdaSendMessage', {
-      functionName: `${this.stackName}-lambda-send-message`,
+      functionName: `${this.stackName}-${environment}-lambda-send-message`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
@@ -108,7 +117,7 @@ export class AWSResumeStack extends cdk.Stack {
 
     // API Gateway
     const api = new apigateway.RestApi(this, 'APIGateway', {
-      restApiName: `${this.stackName}-api-gateway`,
+      restApiName: `${this.stackName}-${environment}-api-gateway`,
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
@@ -154,7 +163,7 @@ export class AWSResumeStack extends cdk.Stack {
 
     // Add visitor Lambda
     const addVisitorLambda = new lambda.Function(this, 'LambdaAddVisitor', {
-      functionName: `${this.stackName}-lambda-add-visitor`,
+      functionName: `${this.stackName}-${environment}-lambda-add-visitor`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'index.handler',
       environment: {
@@ -213,7 +222,7 @@ export class AWSResumeStack extends cdk.Stack {
 
     // Get visitor count Lambda
     const getVisitorCountLambda = new lambda.Function(this, 'LambdaGetVisitorCount', {
-      functionName: `${this.stackName}-lambda-get-visitor-count`,
+      functionName: `${this.stackName}-${environment}-lambda-get-visitor-count`,
       runtime: lambda.Runtime.NODEJS_22_X,
       handler: 'index.handler',
       environment: {
@@ -298,13 +307,13 @@ export class AWSResumeStack extends cdk.Stack {
       }
     });
     const codeBuildProject = new codebuild.PipelineProject(this, 'CodeBuildProject', {
-      projectName: `${this.stackName}-codebuild-project`,
+      projectName: `${this.stackName}-${environment}-codebuild-project`,
       environment: {
         buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
         computeType: codebuild.ComputeType.SMALL,
         environmentVariables: {
           VITE_API_URL: {
-            value: `https://api.resume.oussamakhalifeh.com`
+            value: backendUrl
           }
         }
       },
@@ -313,7 +322,7 @@ export class AWSResumeStack extends cdk.Stack {
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
-      pipelineName: `${this.stackName}-pipeline`,
+      pipelineName: `${this.stackName}-${environment}-pipeline`,
       artifactBucket: pipelineArtifactsBucket,
       stages: [
         {

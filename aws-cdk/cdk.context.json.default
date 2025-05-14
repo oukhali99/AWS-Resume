@@ -1,0 +1,11 @@
+{
+    "githubConnectionArn": "changeme",
+    "dev": {
+        "s3BucketWebsite": "changeme",
+        "backendUrl": "changeme"
+    },
+    "prod": {
+        "s3BucketWebsite": "changeme",
+        "backendUrl": "changeme"
+    }
+} 

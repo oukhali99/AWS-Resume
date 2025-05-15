@@ -1,4 +1,4 @@
-import { Container, Row, Col, Card, Badge, Navbar } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Navbar, Button } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import ContactInfo from './ContactInfo';
 import VisitorCount from './VisitorCount';
@@ -34,6 +34,24 @@ function App() {
             <VisitorCount />
           </Card.Body>
         </Card>
+
+        {/* Projects Section */}
+        <SectionCard title="Projects">
+          <Project 
+            title="JWT OAuth2 Spring Boot + React"
+            description="Full-stack authentication system with OAuth2 and JWT tokens using Spring Boot and React."
+            technologies={["Spring Boot", "React", "OAuth2", "AWS", "CDK", "CI/CD"]}
+            link="https://jwt-oauth-frontend.oussamakhalifeh.com"
+            githubLink="https://github.com/oukhali99/JWT-OAuth2-Spring-Boot-React"
+          />
+          <Project 
+            title="AWS Resume"
+            description="This resume website, built with React and deployed on AWS with a serverless backend."
+            technologies={["React", "AWS Lambda", "DynamoDB", "API Gateway", "S3", "CloudFront"]}
+            link="https://resume.oussamakhalifeh.com"
+            githubLink="https://github.com/oukhali99/AWS-Resume"
+          />
+        </SectionCard>
 
         {/* Education Section */}
         <SectionCard title="Education">
@@ -128,6 +146,42 @@ const SkillList = ({ skills }: { skills: string[] }) => (
       </li>
     ))}
   </ul>
+);
+
+const Project = ({ 
+  title, 
+  description, 
+  technologies, 
+  link, 
+  githubLink 
+}: { 
+  title: string, 
+  description: string, 
+  technologies: string[], 
+  link?: string, 
+  githubLink?: string 
+}) => (
+  <div className="mb-4">
+    <h4>{title}</h4>
+    <p>{description}</p>
+    <div className="mb-2">
+      {technologies.map((tech, i) => (
+        <Badge key={i} bg="primary" className="me-2 mb-2">{tech}</Badge>
+      ))}
+    </div>
+    <div>
+      {link && (
+        <Button variant="outline-primary" href={link} target="_blank" className="me-2" size="sm">
+          Live Demo
+        </Button>
+      )}
+      {githubLink && (
+        <Button variant="outline-secondary" href={githubLink} target="_blank" size="sm">
+          GitHub Repository
+        </Button>
+      )}
+    </div>
+  </div>
 );
 
 export default App;

@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import ContactInfo from './ContactInfo';
 import VisitorCount from './VisitorCount';
 import awsLogo from './assets/aws-color-2499456018.png'; // You must add aws-logo.png in the same directory or adjust the path
+import { version } from '../package.json';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               className="d-inline-block align-top me-2"
             />
             Deployed on AWS using CDK with Full CodePipeline CI/CD
+            <Badge bg="primary" className="ms-2">v{version}</Badge>
           </Navbar.Brand>
         </Container>
       </Navbar>
@@ -171,7 +173,7 @@ const Project = ({
     </div>
     <div>
       {link && (
-        <Button variant="outline-primary" href={link} target="_blank" className="me-2" size="sm">
+        <Button variant="success" href={link} target="_blank" className="me-2" size="sm">
           Live Demo
         </Button>
       )}

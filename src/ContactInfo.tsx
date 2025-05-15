@@ -124,9 +124,9 @@ const ContactInfo = () => {
 				<ContactItem>📍 Montreal, Canada (Easy Relocation)</ContactItem>
 				<ContactItem>
 					<span>📧</span>
-					<StyledButton variant="primary" onClick={() => setShowEmailModal(true)}>Send E-Mail</StyledButton>
+					<StyledButton variant="success" target="_blank" className="me-2" size="sm" onClick={() => setShowEmailModal(true)}>Send E-Mail</StyledButton>
 				</ContactItem>
-				<ContactItem>👨‍💻 <StyledButton href="https://github.com/oukhali99" target="_blank" rel="noopener noreferrer">GitHub</StyledButton></ContactItem>
+				<ContactItem>👨‍💻 <StyledButton variant="success" href="https://github.com/oukhali99" target="_blank" rel="noopener noreferrer">GitHub</StyledButton></ContactItem>
 			</ContactInfoDiv>
 		</div>
 	);

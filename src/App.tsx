@@ -1,9 +1,10 @@
-import { Container, Row, Col, Card, Badge, Navbar, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Navbar, Button, Modal } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import ContactInfo from './ContactInfo';
 import VisitorCount from './VisitorCount';
 import awsLogo from './assets/aws-color-2499456018.png'; // You must add aws-logo.png in the same directory or adjust the path
 import { version } from '../package.json';
+import { useState } from 'react';
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
             technologies={["Spring Boot", "React", "OAuth2", "AWS", "CDK", "CI/CD"]}
             link="https://jwt-oauth-frontend.oussamakhalifeh.com"
             githubLink="https://github.com/oukhali99/JWT-OAuth2-Spring-Boot-React"
+            image="https://raw.githubusercontent.com/oukhali99/JWT-OAuth2-Spring-Boot-React/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
           />
           <Project 
             title="AWS Resume"
@@ -155,35 +157,78 @@ const Project = ({
   description, 
   technologies, 
   link, 
-  githubLink 
+  githubLink,
+  image
 }: { 
   title: string, 
   description: string, 
   technologies: string[], 
   link?: string, 
-  githubLink?: string 
-}) => (
-  <div className="mb-4">
-    <h4>{title}</h4>
-    <p>{description}</p>
-    <div className="mb-2">
-      {technologies.map((tech, i) => (
-        <Badge key={i} bg="primary" className="me-2 mb-2">{tech}</Badge>
-      ))}
+  githubLink?: string,
+  image?: string
+}) => {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <div className="mb-4">
+      <Row>
+        <Col md={image ? 8 : 12}>
+          <h4>{title}</h4>
+          <p>{description}</p>
+          <div className="mb-2">
+            {technologies.map((tech, i) => (
+              <Badge key={i} bg="primary" className="me-2 mb-2">{tech}</Badge>
+            ))}
+          </div>
+          <div>
+            {link && (
+              <Button variant="success" href={link} target="_blank" className="me-2" size="sm">
+                Live Demo
+              </Button>
+            )}
+            {githubLink && (
+              <Button variant="outline-secondary" href={githubLink} target="_blank" size="sm">
+                GitHub Repository
+              </Button>
+            )}
+          </div>
+        </Col>
+        {image && (
+          <Col md={4} className="d-flex align-items-center justify-content-center">
+            <Card 
+              className="shadow-sm" 
+              style={{ cursor: 'pointer', transition: 'all 0.2s ease-in-out' }}
+              onClick={() => setShowModal(true)}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <Card.Body className="p-2">
+                <img 
+                  src={image}
+                  alt={`${title} screenshot`}
+                  className="img-fluid rounded"
+                  style={{ maxHeight: '200px', objectFit: 'contain' }}
+                />
+              </Card.Body>
+            </Card>
+            <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+              <Modal.Header closeButton>
+                <Modal.Title>{title}</Modal.Title>
+              </Modal.Header>
+              <Modal.Body className="text-center">
+                <img 
+                  src={image}
+                  alt={`${title} screenshot`}
+                  className="img-fluid"
+                  style={{ maxHeight: '80vh' }}
+                />
+              </Modal.Body>
+            </Modal>
+          </Col>
+        )}
+      </Row>
     </div>
-    <div>
-      {link && (
-        <Button variant="success" href={link} target="_blank" className="me-2" size="sm">
-          Live Demo
-        </Button>
-      )}
-      {githubLink && (
-        <Button variant="outline-secondary" href={githubLink} target="_blank" size="sm">
-          GitHub Repository
-        </Button>
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 export default App;

@@ -1,5 +1,16 @@
 # AWS-Resume
 
+Repo for my resume
+
+## Hosted on AWS
+
+This project is hosted [here](https://resume.oussamakhalifeh.com)
+
+![AWS Architecture](https://raw.githubusercontent.com/oukhali99/AWS-Resume/refs/heads/main/docs/AWS%20Architecture.drawio.svg)
+
+
+## ViteJS
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

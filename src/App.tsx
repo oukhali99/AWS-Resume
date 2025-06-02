@@ -54,6 +54,7 @@ function App() {
             technologies={["React", "AWS Lambda", "DynamoDB", "API Gateway", "S3", "CloudFront"]}
             link="https://resume.oussamakhalifeh.com"
             githubLink="https://github.com/oukhali99/AWS-Resume"
+            image="https://raw.githubusercontent.com/oukhali99/AWS-Resume/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
           />
         </SectionCard>
 

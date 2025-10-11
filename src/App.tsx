@@ -73,10 +73,10 @@ function App() {
             company="Asset Science"
             duration="July 2021 – Present"
             bullets={[
-              "Developed an ElectronJS + ReactJS desktop app",
-              "Used C++ and libimobiledevice to communicate with mobile devices",
-              "Built iOS/Android mobile apps and macOS desktop tools",
-              "Worked closely with clients to meet business needs"
+              "Develop an ElectronJS + ReactJS desktop app",
+              "Use C++ and libimobiledevice to communicate with mobile devices",
+              "Build iOS/Android mobile apps and macOS desktop tools",
+              "Work closely with clients to meet business needs"
             ]}
           />
           <Job
@@ -84,9 +84,9 @@ function App() {
             company="Solarex"
             duration="May 2021 – July 2021"
             bullets={[
-              "Built reservation APIs with Laravel and ASP.NET",
-              "Implemented Identity Server authentication",
-              "Developed front-ends with Razor"
+              "Build reservation APIs with Laravel and ASP.NET",
+              "Implement Identity Server authentication",
+              "Develop front-ends with Razor"
             ]}
           />
           <Job
@@ -94,9 +94,9 @@ function App() {
             company="CRSNG at UQAM"
             duration="May 2019 – September 2019"
             bullets={[
-              "Optimized packet scheduling algorithms",
-              "Implemented Python versions of theoretical models",
-              "Co-authored a research paper"
+              "Optimize packet scheduling algorithms",
+              "Implement Python versions of theoretical models",
+              "Co-author a research paper"
             ]}
           />
         </SectionCard>

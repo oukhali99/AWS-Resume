@@ -73,6 +73,7 @@ function App() {
             company="Asset Science"
             duration="July 2021 – Present"
             bullets={[
+              "Deploy Enterprise Applications using Azure Intune",
               "Develop an ElectronJS + ReactJS desktop app",
               "Use C++ and libimobiledevice to communicate with mobile devices",
               "Build iOS/Android mobile apps and macOS desktop tools",

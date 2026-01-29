@@ -20,7 +20,7 @@ function App() {
               height="30"
               className="d-inline-block align-top me-2"
             />
-            Deployed on AWS using CDK with Full CodePipeline CI/CD
+            Deployed on AWS using Terraform with Full CodePipeline CI/CD
             <Badge bg="primary" className="ms-2">v{version}</Badge>
           </Navbar.Brand>
         </Container>

@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in your values
+
+aws_region   = "us-east-1"
+environment  = "dev"
+
+# Create in AWS Console: CodePipeline -> Settings -> Connections
+github_connection_arn = "arn:aws:codestar-connections:us-east-1:ACCOUNT:connection/CONNECTION_ID"
+
+# S3 bucket for website (must exist; pipeline deploys to it)
+s3_bucket_website = "your-website-bucket-name"
+
+# Backend API URL (used as VITE_API_URL in CodeBuild)
+backend_url = "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev"

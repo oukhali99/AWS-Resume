@@ -56,6 +56,14 @@ function App() {
             githubLink="https://github.com/oukhali99/AWS-Resume"
             image="https://raw.githubusercontent.com/oukhali99/AWS-Resume/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
           />
+          <Project 
+            title="Gig demo"
+            description="Serverless gig marketplace: job posts, bookings, and payments on AWS. TypeScript Lambdas behind HTTP API Gateway and Cognito JWT auth, DynamoDB tables, S3 images with Rekognition/Comprehend moderation and CloudFront delivery, Terraform infra and CodePipeline deploys."
+            technologies={["TypeScript", "React", "Lambda", "API Gateway", "DynamoDB", "Terraform", "CI/CD"]}
+            link="https://gig-demo.oussamakhalifeh.com"
+            githubLink="https://github.com/oukhali99/gig-demo"
+            image="https://raw.githubusercontent.com/oukhali99/gig-demo/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
+          />
         </SectionCard>
 
         {/* Education Section */}

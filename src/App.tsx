@@ -40,10 +40,10 @@ function App() {
 
         {/* Projects Section */}
         <SectionCard title="Projects">
-          <Project 
+          <Project
             title="Gig demo"
-            description="Serverless gig marketplace: job posts, bookings, and payments on AWS. TypeScript Lambdas behind HTTP API Gateway and Cognito JWT auth, DynamoDB tables, S3 images with Rekognition/Comprehend moderation and CloudFront delivery, Terraform infra and CodePipeline deploys."
-            technologies={["TypeScript", "React", "Lambda", "API Gateway", "DynamoDB", "Terraform", "CI/CD"]}
+            description="Serverless gig marketplace: job posts, bookings, and payments on AWS. TypeScript Lambdas behind HTTP API Gateway and Cognito JWT auth, DynamoDB tables, S3 images with Rekognition/Comprehend moderation and CloudFront delivery, Stripe Payment Intents for hold-and-capture billing, Terraform infra and CodePipeline deploys."
+            technologies={["TypeScript", "React", "Lambda", "API Gateway", "DynamoDB", "Stripe", "Terraform", "CI/CD"]}
             link="https://gig-demo.oussamakhalifeh.com"
             githubLink="https://github.com/oukhali99/gig-demo"
             image="https://raw.githubusercontent.com/oukhali99/gig-demo/refs/heads/main/docs/AWS%20Architecture.drawio.svg"

@@ -6,21 +6,21 @@ resource "aws_s3_bucket" "pipeline_artifacts" {
 }
 
 resource "aws_s3_bucket_public_access_block" "pipeline_artifacts" {
-  bucket = aws_s3_bucket.pipeline_artifacts.id
+  bucket                  = aws_s3_bucket.pipeline_artifacts.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-# IAM Role for CodeBuild
+# IAM Role for CodeBuild (build + invalidate)
 resource "aws_iam_role" "codebuild" {
   name = "${local.stack_name}-${var.environment}-codebuild-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "codebuild.amazonaws.com" }
     }]
   })
@@ -34,35 +34,40 @@ resource "aws_iam_role_policy" "codebuild" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:${var.aws_region}:*:*"
       },
       {
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"]
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"]
         Resource = "${aws_s3_bucket.pipeline_artifacts.arn}/*"
       },
       {
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
         Resource = aws_s3_bucket.pipeline_artifacts.arn
       },
       {
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"]
-        Resource = "arn:aws:s3:::${var.s3_bucket_website}/*"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion", "s3:DeleteObject"]
+        Resource = "${aws_s3_bucket.frontend.arn}/*"
       },
       {
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
-        Resource = "arn:aws:s3:::${var.s3_bucket_website}"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = aws_s3_bucket.frontend.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation", "cloudfront:ListInvalidations"]
+        Resource = aws_cloudfront_distribution.frontend.arn
       }
     ]
   })
 }
 
-# CodeBuild Project
+# CodeBuild Project — build frontend
 resource "aws_codebuild_project" "main" {
   name          = "${local.stack_name}-${var.environment}-codebuild-project"
   description   = "Build AWS Resume frontend"
@@ -78,7 +83,7 @@ resource "aws_codebuild_project" "main" {
     image_pull_credentials_type = "CODEBUILD"
     environment_variable {
       name  = "VITE_API_URL"
-      value = var.backend_url
+      value = trimsuffix(trimspace(var.api_public_url), "/")
     }
   }
   source {
@@ -104,14 +109,46 @@ resource "aws_codebuild_project" "main" {
   tags = local.common_tags
 }
 
+# CodeBuild Project — CloudFront invalidation after S3 deploy
+resource "aws_codebuild_project" "invalidate" {
+  name          = "${local.stack_name}-${var.environment}-invalidate"
+  description   = "Invalidate CloudFront cache after deploy"
+  build_timeout = 10
+  service_role  = aws_iam_role.codebuild.arn
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+  environment {
+    compute_type                = "BUILD_GENERAL1_SMALL"
+    image                       = "aws/codebuild/standard:5.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+    environment_variable {
+      name  = "CF_DISTRIBUTION_ID"
+      value = aws_cloudfront_distribution.frontend.id
+    }
+  }
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = <<-BUILDSPEC
+      version: 0.2
+      phases:
+        build:
+          commands:
+            - aws cloudfront create-invalidation --distribution-id "$CF_DISTRIBUTION_ID" --paths '/*'
+    BUILDSPEC
+  }
+  tags = local.common_tags
+}
+
 # IAM Role for CodePipeline
 resource "aws_iam_role" "codepipeline" {
   name = "${local.stack_name}-${var.environment}-codepipeline-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "codepipeline.amazonaws.com" }
     }]
   })
@@ -125,19 +162,23 @@ resource "aws_iam_role_policy" "codepipeline" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
-        Resource = ["${aws_s3_bucket.pipeline_artifacts.arn}/*", "arn:aws:s3:::${var.s3_bucket_website}/*"]
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject"]
+        Resource = ["${aws_s3_bucket.pipeline_artifacts.arn}/*", "${aws_s3_bucket.frontend.arn}/*"]
       },
       {
-        Effect = "Allow"
-        Action = ["s3:ListBucket"]
-        Resource = [aws_s3_bucket.pipeline_artifacts.arn, "arn:aws:s3:::${var.s3_bucket_website}"]
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = [aws_s3_bucket.pipeline_artifacts.arn, aws_s3_bucket.frontend.arn]
       },
       {
         Effect = "Allow"
         Action = ["codebuild:BatchGetBuilds", "codebuild:StartBuild", "codestar-connections:UseConnection"]
-        Resource = [aws_codebuild_project.main.arn, var.github_connection_arn]
+        Resource = [
+          aws_codebuild_project.main.arn,
+          aws_codebuild_project.invalidate.arn,
+          var.github_connection_arn,
+        ]
       }
     ]
   })
@@ -176,7 +217,7 @@ resource "aws_codepipeline" "main" {
       provider         = "CodeBuild"
       version          = "1"
       input_artifacts  = ["SourceOutput"]
-      output_artifacts  = ["BuildOutput"]
+      output_artifacts = ["BuildOutput"]
       configuration = {
         ProjectName = aws_codebuild_project.main.name
       }
@@ -192,8 +233,22 @@ resource "aws_codepipeline" "main" {
       version         = "1"
       input_artifacts = ["BuildOutput"]
       configuration = {
-        BucketName = var.s3_bucket_website
+        BucketName = aws_s3_bucket.frontend.bucket
         Extract    = "true"
+      }
+    }
+  }
+  stage {
+    name = "Invalidate"
+    action {
+      name            = "InvalidateCloudFront"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      version         = "1"
+      input_artifacts = ["BuildOutput"]
+      configuration = {
+        ProjectName = aws_codebuild_project.invalidate.name
       }
     }
   }

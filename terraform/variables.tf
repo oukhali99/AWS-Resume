@@ -14,12 +14,29 @@ variable "github_connection_arn" {
   type        = string
 }
 
-variable "s3_bucket_website" {
-  description = "S3 bucket name for website deployment"
+variable "frontend_public_url" {
+  description = "Frontend public URL (e.g. https://resume.example.com). Hostname becomes the CloudFront alternate domain and the S3 bucket name."
   type        = string
+  validation {
+    condition     = trimspace(var.frontend_public_url) != ""
+    error_message = "frontend_public_url must be non-empty."
+  }
 }
 
-variable "backend_url" {
-  description = "Backend API URL (for VITE_API_URL in build)"
+variable "api_public_url" {
+  description = "API public URL (e.g. https://api.resume.example.com). Hostname becomes the CloudFront alternate domain in front of API Gateway."
   type        = string
+  validation {
+    condition     = trimspace(var.api_public_url) != ""
+    error_message = "api_public_url must be non-empty."
+  }
+}
+
+variable "route53_zone_id" {
+  description = "Route 53 hosted zone ID for ACM DNS validation and A/AAAA aliases (e.g. Z0123456789)."
+  type        = string
+  validation {
+    condition     = trimspace(var.route53_zone_id) != ""
+    error_message = "route53_zone_id must be non-empty."
+  }
 }

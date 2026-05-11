@@ -48,15 +48,7 @@ function App() {
             githubLink="https://github.com/oukhali99/gig-demo"
             image="https://raw.githubusercontent.com/oukhali99/gig-demo/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
           />
-          <Project 
-            title="JWT OAuth2 Spring Boot + React"
-            description="Full-stack authentication system with OAuth2 and JWT tokens using Spring Boot and React."
-            technologies={["Spring Boot", "React", "OAuth2", "AWS", "CDK", "CI/CD"]}
-            link="https://jwt-oauth-frontend.oussamakhalifeh.com"
-            githubLink="https://github.com/oukhali99/JWT-OAuth2-Spring-Boot-React"
-            image="https://raw.githubusercontent.com/oukhali99/JWT-OAuth2-Spring-Boot-React/refs/heads/main/docs/AWS%20Architecture.drawio.svg"
-          />
-          <Project 
+          <Project
             title="AWS Resume"
             description="This resume website, built with React and deployed on AWS with a serverless backend."
             technologies={["React", "AWS Lambda", "DynamoDB", "API Gateway", "S3", "CloudFront"]}
